@@ -1,49 +1,64 @@
 version: 0.2
-
+env:
+  variables:
+    ECR_REPO_NAME: reactbluegreen
+    AWS_REGION: eu-west-1
 phases:
   pre_build:
     commands:
-        # ECR PUBLIC GALLERY LOGIN
+      - echo Logging in to Amazon ECR...
+      - aws --version
+       # ECR PUBLIC GALLERY LOGIN
       - aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws
-    
-     # ECR LOGIN
+      
+      # ECR LOGIN
       - aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
-      
-      - COMMIT_HASH="${CODEBUILD_RESOLVED_SOURCE_VERSION:0:7}"
-      
+    
       - REPO_URI="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}"
-      
-      - ECR_IMAGE_URI="${REPO_URI}:${COMMIT_ID}"
-     
+
+      - COMMIT_HASH="${CODEBUILD_RESOLVED_SOURCE_VERSION:0:7}"
+       
       - IMAGE_TAG="${COMMIT_HASH:=latest}"
   build:
     commands:
-      - echo Build started on `date`
-    
-      - echo Building the Docker image...
+      - echo Docker build and tagging started on `date`
       
       - docker build -t ${REPO_URI}:latest .
       
       - docker tag ${REPO_URI}:latest ${REPO_URI}:${IMAGE_TAG}
       
+      - echo Docker build and tagging completed on `date`
   post_build:
     commands:
       - echo Build completed on `date`
-      
-      - echo Pushing the Docker images...
+      -
+      - echo Pushing the docker images...
       
       - docker push ${REPO_URI}:latest
       
       - docker push ${REPO_URI}:${IMAGE_TAG}
-    
-      - echo Writing image definitions file...
-
-      # Generate image definitions file for ECS
-      - printf '[{"name":"frontendtest","imageUri":"%s"}]' ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com > imagedefinitions.json
-
+      
+      - sed -i 's@REPO_URI@'$REPO_URI'@g' taskdef.json
+      
+      - sed -i 's@IMAGE_TAG@'$IMAGE_TAG'@g' taskdef.json
+      
+      - echo update the REGION in task definition...
+      
+      - sed -i 's@AWS_REGION@'$AWS_REGION'@g' taskdef.json
+      
+      - echo update the roles in task definition...
+      
+      - sed -i 's@TASK_EXECUTION_ARN@'$TASK_EXECUTION_ARN'@g' taskdef.json
+      
+      - printf '{"ImageURI":"%s"}' ${REPO_URI}:${IMAGE_TAG} > imageDetail.json 
+      
+        # Generate image definitions file for ECS
+      - printf '[{"name":"reactbluegreen","imageUri":"%s"}]' ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com > imagedefinitions.json
+      
+      
 artifacts:
   files:
+    - "appspec.yaml"
+    - "taskdef.json"
+    - "imageDetail.json"
     - imagedefinitions.json
-   
-    
-

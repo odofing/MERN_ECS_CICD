@@ -1,5 +1,5 @@
-FROM node:18.12.1-buster-slim AS builder
-
+#FROM node:18.12.1-buster-slim AS builder
+FROM public.ecr.aws/docker/library/node:21.4-alpine3.18 AS builder
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY public/ public/
@@ -7,7 +7,8 @@ COPY src/ src/
 RUN npm ci
 RUN npm run build
 
-FROM nginx:1.23.2-alpine
+FROM public.ecr.aws/docker/library/nginx:1.23.2-alpine
+#FROM nginx:1.23.2-alpine
 COPY nginx/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=builder /app/build /usr/share/nginx/html
 RUN touch /var/run/nginx.pid

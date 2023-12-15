@@ -1,0 +1,36 @@
+{
+	"containerDefinitions": [
+		{
+			"name": "reactbluegreen",
+			"image": "<IMAGE_URI>",
+			"portMappings": [
+				{
+					"containerPort": 3000,
+					"protocol": "tcp"
+				}
+			],
+			"essential": true,
+			"dockerLabels": {
+				"name": "reactbluegreen"
+			},
+			"logConfiguration": {
+				"logDriver": "awslogs",
+				"options": {
+					"awslogs-group": "/ecs/react-app-definition",
+					"awslogs-region": "eu-west-1",
+					"awslogs-create-group": "true",
+					"awslogs-stream-prefix": "reactbluegreen"
+				}
+			}
+		}
+	],
+	"taskRoleArn": "arn:aws:iam::473019654406:role/ecsTaskExecutionRole",
+	"executionRoleArn": "arn:aws:iam::473019654406:role/ecsTaskExecutionRole",
+	"family": "react-app-definition",
+	"networkMode": "awsvpc",
+	"requiresCompatibilities": [
+		"FARGATE"
+	],
+	"cpu": "1024",
+	"memory": "3072"
+}
